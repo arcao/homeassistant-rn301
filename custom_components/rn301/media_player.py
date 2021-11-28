@@ -8,7 +8,7 @@ import voluptuous as vol
 import requests
 
 from homeassistant.components.media_player import (
-    MediaPlayerEntity, PLATFORM_SCHEMA)
+    MediaPlayerDevice, PLATFORM_SCHEMA)
 
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_PLAYLIST, MEDIA_TYPE_CHANNEL, SUPPORT_NEXT_TRACK, SUPPORT_PAUSE, SUPPORT_PLAY, SUPPORT_PREVIOUS_TRACK,
@@ -42,6 +42,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string
 })
 SOURCE_MAPPING = {
+    'AirPlay': 'AirPlay',
     'Optical': 'OPTICAL',
     'CD': 'CD',
     'Spotify': 'Spotify',
@@ -63,7 +64,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     add_devices(devices)
 
 
-class YamahaRn301MP(MediaPlayerEntity):
+class YamahaRn301MP(MediaPlayerDevice):
 
     def __init__(self, name, host):
         self._data = None
@@ -121,7 +122,7 @@ class YamahaRn301MP(MediaPlayerEntity):
 
     @property
     def supported_features(self):
-        if self._source in ("Optical", "CD", "Line 1", "Line 2", "Line 3", "Tuner"):
+        if self._source in ("Optical", "CD", "Line 1", "Line 2", "Line 3", "Tuner", "AirPlay"):
             return SUPPORTED_PLAYBACK
         return SUPPORT_YAMAHA
 
