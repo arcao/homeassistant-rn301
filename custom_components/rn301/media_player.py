@@ -8,7 +8,7 @@ import voluptuous as vol
 import requests
 
 from homeassistant.components.media_player import (
-    MediaPlayerDevice, PLATFORM_SCHEMA)
+    MediaPlayerEntity, PLATFORM_SCHEMA)
 
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_PLAYLIST, MEDIA_TYPE_CHANNEL, SUPPORT_NEXT_TRACK, SUPPORT_PAUSE, SUPPORT_PLAY, SUPPORT_PREVIOUS_TRACK,
@@ -64,7 +64,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     add_devices(devices)
 
 
-class YamahaRn301MP(MediaPlayerDevice):
+class YamahaRn301MP(MediaPlayerEntity):
 
     def __init__(self, name, host):
         self._data = None
