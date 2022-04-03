@@ -1,6 +1,7 @@
 {
   "domain": "rn301",
   "name": "Yamaha R-N301",
+  "version": "1.0.0",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
