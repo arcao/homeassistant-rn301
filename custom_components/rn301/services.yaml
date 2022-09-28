@@ -1,0 +1,33 @@
+media_list_direct_sel:
+    name: Direct list selection
+    target:
+        entity:
+            domain: media_player
+    fields:
+        item:
+            required: true
+            selector:
+                select:
+                    options:
+                        - Line_1
+                        - Line_2
+                        - Line_3
+                        - Line_4
+                        - Line_5
+                        - Line_6
+                        - Line_7
+                        - Line_8
+  
+media_list_jump_list:
+    name: Jump to list page
+    target:
+        entity:
+            domain: media_player
+    fields:
+        index:
+            required: true
+            selector:
+                number:
+                    min: 1
+                    max: 65536
+                    
