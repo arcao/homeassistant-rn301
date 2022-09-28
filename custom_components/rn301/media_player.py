@@ -1,6 +1,6 @@
 import logging
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from typing import Optional
 
@@ -14,11 +14,26 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_PLAYLIST, MEDIA_TYPE_CHANNEL, SUPPORT_NEXT_TRACK, SUPPORT_PAUSE, SUPPORT_PLAY, SUPPORT_PREVIOUS_TRACK,
     SUPPORT_SELECT_SOURCE, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, SUPPORT_VOLUME_MUTE, SUPPORT_VOLUME_SET,
     SUPPORT_SHUFFLE_SET)
+
 from homeassistant.const import (
-    CONF_HOST, CONF_NAME, STATE_OFF, STATE_IDLE, STATE_PLAYING, STATE_UNKNOWN)
+    ATTR_ENTITY_ID,
+    CONF_HOST, 
+    CONF_NAME, 
+    STATE_OFF, 
+    STATE_IDLE, 
+    STATE_PLAYING, 
+    STATE_UNKNOWN
+)
 
 import homeassistant.util.dt as dt_util
-import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv, entity_platform, service
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 
 DOMAIN = 'rn301'
 
@@ -41,6 +56,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Required(CONF_HOST): cv.string
 })
+
 SOURCE_MAPPING = {
     'AirPlay': 'AirPlay',
     'Optical': 'OPTICAL',
@@ -57,11 +73,48 @@ SOURCE_MAPPING = {
 _LOGGER = logging.getLogger(__name__)
 
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
-    devices = []
-    device = YamahaRn301MP(config.get(CONF_NAME), config.get(CONF_HOST))
-    devices.append(device)
-    add_devices(devices)
+ATTR_ITEM = "item"
+ATTR_INDEX = "index"
+
+SERVICE_MEDIA_LIST_DIRECT_SEL = "media_list_direct_sel"
+SERVICE_MEDIA_LIST_JUMP_LIST = "media_list_jump_list"
+
+SCAN_INTERVAL = timedelta(seconds=5)
+
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info=None
+) -> None:
+    """Set up this component using YAML."""
+    platform = entity_platform.async_get_current_platform()
+
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = []
+
+    entity = YamahaRn301MP(config.get(CONF_NAME), config.get(CONF_HOST))
+    async_add_entities([entity], True)
+    
+    hass.data[DOMAIN].extend([entity])
+    
+    platform.async_register_entity_service(
+        SERVICE_MEDIA_LIST_DIRECT_SEL,
+        {
+            vol.Required(ATTR_ITEM): cv.string
+        },
+        SERVICE_MEDIA_LIST_DIRECT_SEL,
+    )
+    
+    platform.async_register_entity_service(
+        SERVICE_MEDIA_LIST_JUMP_LIST,
+        {
+            vol.Required(ATTR_INDEX): vol.All(vol.Coerce(int), vol.Range(min=1, max=65536))
+        },
+        SERVICE_MEDIA_LIST_JUMP_LIST,
+    )
+    
+    return True
 
 
 class YamahaRn301MP(MediaPlayerEntity):
@@ -115,6 +168,10 @@ class YamahaRn301MP(MediaPlayerEntity):
                 self._device_source = txt.replace(" ", "_")
         if self._pwstate != STATE_OFF:
             self._update_media_playing()
+
+    @property
+    def unique_id(self):
+        return DOMAIN + "_" + self._host
 
     @property
     def state(self):
@@ -231,6 +288,16 @@ class YamahaRn301MP(MediaPlayerEntity):
 
     def media_previous_track(self):
         self._media_play_control("Skip Rev")
+        
+    def _media_list_control(self, command, value):
+        self._do_api_put(
+            '<{0}><List_Control><{1}>{2}</{1}></List_Control></{0}>'.format(self._device_source, command, value))
+
+    def media_list_direct_sel(self, item):
+        self._media_list_control("Direct_Sel", item)
+
+    def media_list_jump_list(self, index):
+        self._media_list_control("Jump_List", index)
 
     def _set_power_state(self, on):
         self._do_api_put(
@@ -239,6 +306,7 @@ class YamahaRn301MP(MediaPlayerEntity):
     def _do_api_request(self, data) -> str:
         data = '<?xml version="1.0" encoding="utf-8"?>' + data
         req = requests.post(self._base_url, data=data, timeout=DEFAULT_TIMEOUT)
+        req.encoding = 'UTF-8'
         if req.status_code != 200:
             _LOGGER.exception("Error doing API request, %d, %s", req.status_code, data)
         else:
