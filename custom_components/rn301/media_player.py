@@ -266,7 +266,7 @@ class YamahaRn301MP(MediaPlayerEntity):
             '<Main_Zone><Input><Input_Sel>{0}</Input_Sel></Input></Main_Zone>'.format(SOURCE_MAPPING[source]))
 
     def mute_volume(self, mute):
-        self._do_api_put('<System><Volume><Mute>{0}</Mute></Volume></System>'.format('On' if mute else 'Off'))
+        self._do_api_put('<Main_Zone><Volume><Mute>{0}</Mute></Volume></Main_Zone>'.format('On' if mute else 'Off'))
         self._muted = mute
 
     def _media_play_control(self, command):
