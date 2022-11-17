@@ -1,9 +1,11 @@
 {
   "domain": "rn301",
   "name": "Yamaha R-N301",
+  "integration_type": "device",
   "version": "1.0.0",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": []
+  "requirements": [],
+  "iot_class": "local_polling"
 }
