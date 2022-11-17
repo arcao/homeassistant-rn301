@@ -35,7 +35,9 @@ from homeassistant.helpers import config_validation as cv, entity_platform, serv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 
-DOMAIN = 'rn301'
+from .const import (
+    SERVICE_ENABLE_OUTPUT,
+)
 
 ATTR_ENABLED = 'enabled'
 ATTR_PORT = 'port'
@@ -44,7 +46,6 @@ DEFAULT_NAME = 'Yamaha R-N301'
 DEFAULT_TIMEOUT = 5
 BASE_URL = 'http://{0}/YamahaRemoteControl/ctrl'
 
-SERVICE_ENABLE_OUTPUT = 'yamaha_enable_output'
 SUPPORT_YAMAHA = SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | \
                  SUPPORT_SELECT_SOURCE | SUPPORT_PLAY | SUPPORT_PAUSE | SUPPORT_STOP | \
                  SUPPORT_NEXT_TRACK | SUPPORT_PREVIOUS_TRACK | SUPPORT_SHUFFLE_SET
