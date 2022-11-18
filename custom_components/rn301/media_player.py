@@ -258,8 +258,8 @@ class YamahaRn301MP(MediaPlayerEntity):
     @property
     def media_content_type(self):
         if self._source == "Net Radio" or self._source == "Tuner":
-            return MEDIA_TYPE_CHANNEL
-        return MEDIA_TYPE_PLAYLIST
+            return MediaType.CHANNEL
+        return MediaType.PLAYLIST
 
     @property
     def shuffle(self):
