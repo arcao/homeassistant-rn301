@@ -36,6 +36,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 
 from .const import (
+    DOMAIN,
     SERVICE_ENABLE_OUTPUT,
 )
 
