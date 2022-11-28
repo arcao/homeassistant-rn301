@@ -1,7 +1,11 @@
 
 # R-N301 custom component for homeassistant
 
-Place 'media_player.py' in `${HOMEASSISTANTCONFIG}/custom_components/rn301/`
+Place files in '${HOMEASSISTANTCONFIG}/custom_components/rn301/'
+
+Restart HA before configuring devices. Other wise you will get an error message like "Platform error media_player.rn301 - Integration 'rn301' not found".
+
+
 
 ##Development
 

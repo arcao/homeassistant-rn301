@@ -1,19 +1,22 @@
+"""Support for Yamaha R-N301."""
+
 import logging
+from typing import Optional
+
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
-from typing import Optional
-
-import voluptuous as vol
 import requests
+import voluptuous as vol
+
 
 from homeassistant.components.media_player import (
-    MediaPlayerEntity, PLATFORM_SCHEMA)
-
-from homeassistant.components.media_player.const import (
-    MEDIA_TYPE_PLAYLIST, MEDIA_TYPE_CHANNEL, SUPPORT_NEXT_TRACK, SUPPORT_PAUSE, SUPPORT_PLAY, SUPPORT_PREVIOUS_TRACK,
-    SUPPORT_SELECT_SOURCE, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, SUPPORT_VOLUME_MUTE, SUPPORT_VOLUME_SET,
-    SUPPORT_SHUFFLE_SET)
+    PLATFORM_SCHEMA,
+    MediaPlayerEntity,
+    MediaPlayerEntityFeature,
+    MediaPlayerState,
+    MediaType,
+)
 
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -35,7 +38,10 @@ from homeassistant.helpers import config_validation as cv, entity_platform, serv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 
-DOMAIN = 'rn301'
+from .const import (
+    DOMAIN,
+    SERVICE_ENABLE_OUTPUT,
+)
 
 ATTR_ENABLED = 'enabled'
 ATTR_PORT = 'port'
@@ -44,18 +50,35 @@ DEFAULT_NAME = 'Yamaha R-N301'
 DEFAULT_TIMEOUT = 5
 BASE_URL = 'http://{0}/YamahaRemoteControl/ctrl'
 
-SERVICE_ENABLE_OUTPUT = 'yamaha_enable_output'
-SUPPORT_YAMAHA = SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | \
-                 SUPPORT_SELECT_SOURCE | SUPPORT_PLAY | SUPPORT_PAUSE | SUPPORT_STOP | \
-                 SUPPORT_NEXT_TRACK | SUPPORT_PREVIOUS_TRACK | SUPPORT_SHUFFLE_SET
+SUPPORT_YAMAHA = (
+    MediaPlayerEntityFeature.VOLUME_SET
+    | MediaPlayerEntityFeature.VOLUME_MUTE
+    | MediaPlayerEntityFeature.TURN_ON
+    | MediaPlayerEntityFeature.TURN_OFF
+    | MediaPlayerEntityFeature.SELECT_SOURCE
+    | MediaPlayerEntityFeature.PLAY
+    | MediaPlayerEntityFeature.PAUSE
+    | MediaPlayerEntityFeature.STOP
+    | MediaPlayerEntityFeature.NEXT_TRACK
+    | MediaPlayerEntityFeature.PREVIOUS_TRACK
+    | MediaPlayerEntityFeature.SHUFFLE_SET
+)
 
-SUPPORTED_PLAYBACK = SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | \
-                     SUPPORT_SELECT_SOURCE | SUPPORT_SHUFFLE_SET
+SUPPORTED_PLAYBACK = (
+    MediaPlayerEntityFeature.VOLUME_SET
+    | MediaPlayerEntityFeature.VOLUME_MUTE
+    | MediaPlayerEntityFeature.TURN_ON
+    | MediaPlayerEntityFeature.TURN_OFF
+    | MediaPlayerEntityFeature.SELECT_SOURCE
+    | MediaPlayerEntityFeature.SHUFFLE_SET
+)
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_HOST): cv.string
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Required(CONF_HOST): cv.string,
+    }
+)
 
 SOURCE_MAPPING = {
     'AirPlay': 'AirPlay',
@@ -71,7 +94,6 @@ SOURCE_MAPPING = {
 }
 
 _LOGGER = logging.getLogger(__name__)
-
 
 ATTR_ITEM = "item"
 ATTR_INDEX = "index"
@@ -158,7 +180,7 @@ class YamahaRn301MP(MediaPlayerEntity):
             elif node.tag == "Volume":
                 for voln in node:
                     if voln.tag == "Lvl":
-                        self._volume = int(voln.find("Val").text) / 50
+                        self._volume = int(voln.find("Val").text) / 100
                     elif voln.tag == "Mute":
                         self._muted = voln.text == "On"
             elif node.tag == "Input":
@@ -236,8 +258,8 @@ class YamahaRn301MP(MediaPlayerEntity):
     @property
     def media_content_type(self):
         if self._source == "Net Radio" or self._source == "Tuner":
-            return MEDIA_TYPE_CHANNEL
-        return MEDIA_TYPE_PLAYLIST
+            return MediaType.CHANNEL
+        return MediaType.PLAYLIST
 
     @property
     def shuffle(self):
@@ -257,14 +279,14 @@ class YamahaRn301MP(MediaPlayerEntity):
     def set_volume_level(self, volume):
         self._do_api_put(
             '<Main_Zone><Volume><Lvl><Val>{0}</Val><Exp>0</Exp><Unit></Unit></Lvl></Volume></Main_Zone>'.format(
-                int(volume * 50)))
+                int(volume * 100)))
 
     def select_source(self, source):
         self._do_api_put(
             '<Main_Zone><Input><Input_Sel>{0}</Input_Sel></Input></Main_Zone>'.format(SOURCE_MAPPING[source]))
 
     def mute_volume(self, mute):
-        self._do_api_put('<System><Volume><Mute>{0}</Mute></Volume></System>'.format('On' if mute else 'Off'))
+        self._do_api_put('<Main_Zone><Volume><Mute>{0}</Mute></Volume></Main_Zone>'.format('On' if mute else 'Off'))
         self._muted = mute
 
     def _media_play_control(self, command):
