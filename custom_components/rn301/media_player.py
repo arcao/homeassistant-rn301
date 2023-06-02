@@ -26,7 +26,7 @@ from homeassistant.const import (
 )
 
 import homeassistant.util.dt as dt_util
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
@@ -46,11 +46,11 @@ BASE_URL = 'http://{0}/YamahaRemoteControl/ctrl'
 
 SERVICE_ENABLE_OUTPUT = 'yamaha_enable_output'
 SUPPORT_YAMAHA = SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | \
-                 SUPPORT_SELECT_SOURCE | SUPPORT_PLAY | SUPPORT_PAUSE | SUPPORT_STOP | \
-                 SUPPORT_NEXT_TRACK | SUPPORT_PREVIOUS_TRACK | SUPPORT_SHUFFLE_SET
+    SUPPORT_SELECT_SOURCE | SUPPORT_PLAY | SUPPORT_PAUSE | SUPPORT_STOP | \
+    SUPPORT_NEXT_TRACK | SUPPORT_PREVIOUS_TRACK | SUPPORT_SHUFFLE_SET
 
 SUPPORTED_PLAYBACK = SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | \
-                     SUPPORT_SELECT_SOURCE | SUPPORT_SHUFFLE_SET
+    SUPPORT_SELECT_SOURCE | SUPPORT_SHUFFLE_SET
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
@@ -60,6 +60,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 SOURCE_MAPPING = {
     'AirPlay': 'AirPlay',
     'Optical': 'OPTICAL',
+    'Coaxial': 'COAXIAL',
     'CD': 'CD',
     'Spotify': 'Spotify',
     'Line 1': 'LINE1',
@@ -174,12 +175,25 @@ class YamahaRn301MP(MediaPlayerEntity):
         return DOMAIN + "_" + self._host
 
     @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                (DOMAIN, self.unique_id)
+            },
+            name=self.name,
+            manufacturer="Yamaha",
+            model="R-N301",
+        )
+
+    @property
     def state(self):
         return self._pwstate
 
     @property
     def supported_features(self):
-        if self._source in ("Optical", "CD", "Line 1", "Line 2", "Line 3", "Tuner", "AirPlay"):
+        if self._source in ("Optical", "Coaxial", "CD", "Line 1", "Line 2", "Line 3", "Tuner", "AirPlay"):
             return SUPPORTED_PLAYBACK
         return SUPPORT_YAMAHA
 
